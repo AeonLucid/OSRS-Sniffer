@@ -66,7 +66,7 @@ namespace OSRS.Sniffer.Net
                 return;
             }
 
-            if (_clients.TryRemove(_clientId, out OldschoolClient client))
+            if (_clients.TryRemove(clientId, out OldschoolClient client))
             {
                 client.Dispose();
             }
@@ -86,8 +86,13 @@ namespace OSRS.Sniffer.Net
                 {
                     Logger.Info($"[{_port}] Received connection {clientId} from {socket.RemoteEndPoint}.");
                     
-                    // Start client thread.
-                    new Thread(client.ReceiveData).Start();
+                    // Connect client to runescape (Server is world 382).
+                    // TODO: Receive server ip from OSRS client.
+                    if (client.ConnectToServer("l3uklo11-bond0-11.jagex.com", _port))
+                    {
+                        // Start threads.
+                        client.Start();
+                    }
                 }
                 else
                 {
