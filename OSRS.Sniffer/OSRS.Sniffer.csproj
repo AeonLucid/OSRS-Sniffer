@@ -47,6 +47,8 @@
   <ItemGroup>
     <Compile Include="Net\OldschoolClient.cs" />
     <Compile Include="Net\OldschoolServer.cs" />
+    <Compile Include="Net\Tcp\Connection.cs" />
+    <Compile Include="Net\Tcp\Events\DataReceivedEventArgs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

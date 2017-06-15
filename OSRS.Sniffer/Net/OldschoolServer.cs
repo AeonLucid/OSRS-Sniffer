@@ -61,7 +61,10 @@ namespace OSRS.Sniffer.Net
 
         public void RemoveClient(int clientId)
         {
-            if (!_clients.ContainsKey(clientId)) return;
+            if (!_clients.ContainsKey(clientId))
+            {
+                return;
+            }
 
             if (_clients.TryRemove(_clientId, out OldschoolClient client))
             {

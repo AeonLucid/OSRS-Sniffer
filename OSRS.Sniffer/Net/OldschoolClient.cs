@@ -1,65 +1,53 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using NLog;
+using OSRS.Sniffer.Net.Tcp;
+using OSRS.Sniffer.Net.Tcp.Events;
 
 namespace OSRS.Sniffer.Net
 {
+    /// <summary>
+    ///     This represents a player using his oldschool client
+    ///     to connect to runescape.
+    /// </summary>
     internal class OldschoolClient : IDisposable
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly OldschoolServer _server;
+        private readonly OldschoolServer _oldschoolServer;
 
-        private readonly Socket _client;
+        private readonly Connection _client;
+
+        private readonly Connection _server;
 
         private readonly int _clientId;
 
-        private readonly byte[] _buffer;
-
-        public OldschoolClient(OldschoolServer server, int clientId, Socket client)
+        public OldschoolClient(OldschoolServer oldschoolServer, int clientId, Socket client)
         {
-            _server = server;
+            _oldschoolServer = oldschoolServer;
             _clientId = clientId;
-            _client = client;
-            _buffer = new byte[1024];
+
+            _client = new Connection(client);
+            _client.ConnectionClosed += ClientOnConnectionClosed;
+            _client.DataReceived += ClientOnDataReceived;
         }
 
         public void ReceiveData()
         {
-            if (!_client.Connected)
-            {
-                _server.RemoveClient(_clientId);
-                return;
-            }
-
-            _client.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, ReceiveDataCallback, null);
+            _client.ReceiveData();
         }
 
-        private void ReceiveDataCallback(IAsyncResult ar)
+        private void ClientOnConnectionClosed(object sender, EventArgs eventArgs)
         {
-            try
-            {
-                var bytesReceived = _client.EndReceive(ar);
+            _server.RemoveClient(_clientId);
+        }
 
-                // If amount of bytes received fits in the entire buffer.
-                if (bytesReceived < _buffer.Length)
-                {
-                    var bytes = new byte[bytesReceived];
-
-                    Buffer.BlockCopy(_buffer, 0, bytes, 0, bytesReceived);
-
-                    Logger.Info($"[Client][{_clientId}] Received {bytesReceived} bytes.");
-                    Logger.Info($"[Client][{_clientId}] Hex: '{BitConverter.ToString(bytes)}'.");
-                }
-                else
-                {
-                    Logger.Error($"[Client][{_clientId}] Received too much data.");
-                }
-            }
-            finally
-            {
-                ReceiveData();
-            }
+        private void ClientOnDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Logger.Info($"[Client][{_clientId}] Received {e.Data.Length} bytes.");
+            Logger.Info($"[Client][{_clientId}] Hex: '{BitConverter.ToString(e.Data)}'.");
         }
 
         public void Dispose()
